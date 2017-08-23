@@ -91,16 +91,27 @@ public class TreatingData : MonoBehaviour
         Loom.RunAsync(() => {
         Vector3[] points = new Vector3[pointsNum];
         int[] indecies = new int[pointsNum];
-            for (int i = 0; i < pointsNum; i++)
+
+            int len = vertices.Length;
+            int triangleNum = len - 2;
+            int[] triangles = new int[triangleNum * 3];
+
+            for (int i = 0; i < triangleNum; i++)
             {
                 points[i] = vertices[beginIndex + i];
-                indecies[i] = i;
+                //indecies[i] = i;
+                int start = i * 3;
+                triangles[start] = 0;
+                triangles[start + 1] = i + 1;
+                triangles[start + 2] = i + 2;
+
             }
             //调用loom在update中执行下列方法，达到主线程执行的功能
             Loom.QueueOnMainThread(() => {
                 mesh.Clear();
                 mesh.vertices = points;
-                mesh.SetIndices(indecies, MeshTopology.Points, 0);
+                mesh.SetIndices(triangles, MeshTopology.Triangles, 0);
+                
                 filterAll[meshNum].mesh = mesh;
             });
         });
