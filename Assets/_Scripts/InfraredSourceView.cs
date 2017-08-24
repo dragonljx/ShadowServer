@@ -3,7 +3,6 @@ using Windows.Kinect;
 
 public class InfraredSourceView : MonoBehaviour
 {
-
     private static InfraredSourceView _instance;
     private KinectSensor _Sensor;
 

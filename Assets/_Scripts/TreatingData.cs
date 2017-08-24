@@ -82,67 +82,28 @@ public class TreatingData : MonoBehaviour
 
         }
     }
-
-
-    int[] i0;
-    Vector3[] v0;
-    private void Update()
-    {
-        filterAll[0].mesh.Clear();
-        filterAll[0].mesh.vertices = v0;
-        //filterAll[0].mesh.SetIndices(i0, MeshTopology.Triangles, 0);
-        filterAll[0].mesh.triangles = i0;
-        //filterAll[0].mesh = mesh;
-    }
     /// <summary>
     /// 点云模型生成
     /// </summary>
     public void CloudReverse(Mesh mesh, Vector3[] vertices, int beginIndex, int pointsNum,int meshNum)
     {
         //异步执行以下内容
-        //Loom.RunAsync(() => {
+        Loom.RunAsync(() => {
         Vector3[] points = new Vector3[pointsNum];
         int[] indecies = new int[pointsNum];
-
-            int len = vertices.Length;
-            int f = 0,b = len - 1;
-            int[] triangles = new int[vertices.Length * 3];
-
             for (int i = 0; i < pointsNum; i++)
             {
                 points[i] = vertices[beginIndex + i];
-            //indecies[i] = i;
-            if (i%2 ==1)
-            {
-                triangles[3 * i - 3] = f++;
-                triangles[3 * i - 2] = f;
-                triangles[3 * i - 1] =b;
-
-
+                indecies[i] = i;
             }
-            else
-            {
-                triangles[3 * i - 1] = b--;
-                triangles[3 * i - 2] = b;
-                triangles[3 * i - 3] = f;
-
-
-            }
-
-        }
-
-        i0 = triangles;
-        v0 = points;
-
             //调用loom在update中执行下列方法，达到主线程执行的功能
-            //Loom.QueueOnMainThread(() => {
-                //mesh.Clear();
-                //mesh.vertices = points;
-                //mesh.SetIndices(triangles, MeshTopology.Triangles, 0);
-                
-                //filterAll[meshNum].mesh = mesh;
-            //});
-        //});
+            Loom.QueueOnMainThread(() => {
+                mesh.Clear();
+                mesh.vertices = points;
+                mesh.SetIndices(indecies, MeshTopology.Points, 0);
+                filterAll[meshNum].mesh = mesh;
+            });
+        });
 
 
     }
