@@ -95,24 +95,33 @@ public class DelaunayTriangulation
 
         public Triangle(DelaunayTriangulation dt_, int id1, int id2, int id3)
         {
-            dt = dt_;
-            triIndexs = new int[3] { id1, id2, id3 };
-            List<Vector3> vertices = dt.vertices;
-            Vector3 v1 = vertices[id1];
-            Vector3 v2 = vertices[id2];
-            Vector3 v3 = vertices[id3];
-            //三角形的外切圆中心点
-            float c = 2.0f * ((v2.x - v1.x) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.x - v1.x));
-            float x = ((v3.y - v1.y) * (sq(v2.x) - sq(v1.x) + sq(v2.y) - sq(v1.y)) + (v1.y - v2.y) * (sq(v3.x) - sq(v1.x) + sq(v3.y) - sq(v1.y))) / c;
-            float y = ((v1.x - v3.x) * (sq(v2.x) - sq(v1.x) + sq(v2.y) - sq(v1.y)) + (v2.x - v1.x) * (sq(v3.x) - sq(v1.x) + sq(v3.y) - sq(v1.y))) / c;
-            Vector3 center = new Vector3(x, y, 0);
-            v1.z = 0;
-            center.z = 0;
-            //三角形外切圆的半径
-            float radiuqSqr = Vector3.SqrMagnitude(v1 - center);
+            try
+            {
+                dt = dt_;
+                triIndexs = new int[3] { id1, id2, id3 };
+                List<Vector3> vertices = dt.vertices;
+                Vector3 v1 = vertices[id1];
+                Vector3 v2 = vertices[id2];
+                Vector3 v3 = vertices[id3];
+                //三角形的外切圆中心点
+                float c = 2.0f * ((v2.x - v1.x) * (v3.y - v1.y) - (v2.y - v1.y) * (v3.x - v1.x));
+                float x = ((v3.y - v1.y) * (sq(v2.x) - sq(v1.x) + sq(v2.y) - sq(v1.y)) + (v1.y - v2.y) * (sq(v3.x) - sq(v1.x) + sq(v3.y) - sq(v1.y))) / c;
+                float y = ((v1.x - v3.x) * (sq(v2.x) - sq(v1.x) + sq(v2.y) - sq(v1.y)) + (v2.x - v1.x) * (sq(v3.x) - sq(v1.x) + sq(v3.y) - sq(v1.y))) / c;
+                Vector3 center = new Vector3(x, y, 0);
+                v1.z = 0;
+                center.z = 0;
+                //三角形外切圆的半径
+                float radiuqSqr = Vector3.SqrMagnitude(v1 - center);
 
-            this.center = center;
-            this.sqrRadius = radiuqSqr;
+                this.center = center;
+                this.sqrRadius = radiuqSqr;
+            }
+            catch (System.Exception e)
+            {
+                Debug.Log(e);
+                throw;
+            }
+          
         }
 
         /// <summary>
@@ -122,14 +131,25 @@ public class DelaunayTriangulation
         /// <returns></returns>
         public List<Triangle> Divide(int newIndex)
         {
-            List<Triangle> tris = new List<Triangle>();
-            for (int i = 0; i < 3; i++)
+            try
             {
-                int j = (i == 2) ? 0 : i + 1;
-                Triangle tri = new Triangle(dt, triIndexs[i], triIndexs[j], newIndex);
-                tris.Add(tri);
+                List<Triangle> tris = new List<Triangle>();
+                for (int i = 0; i < 3; i++)
+                {
+                    int j = (i == 2) ? 0 : i + 1;
+                    Triangle tri = new Triangle(dt, triIndexs[i], triIndexs[j], newIndex);
+                    tris.Add(tri);
+                    Debug.Log(j);
+
+                }
+                return tris;
             }
-            return tris;
+            catch (System.Exception e)
+            {
+                Debug.Log(e);
+                throw;
+            }
+
         }
 
         /// <summary>

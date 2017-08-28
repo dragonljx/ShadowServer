@@ -70,6 +70,7 @@ public class TreatingData : MonoBehaviour
         {
             return;
         }
+
         CameraSpacePoint[] camSpace = new CameraSpacePoint[depth.Length];
         _Sensor.CoordinateMapper.MapDepthFrameToCameraSpace(depth, camSpace);
 
@@ -91,7 +92,7 @@ public class TreatingData : MonoBehaviour
         //初始化坐标
         coordinatesAll = new Vector3[count];
         //将有效坐标存入
-        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, 10);
+        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, count);
 
         #region 计算出点云的最大边界
 
@@ -200,13 +201,18 @@ public class TreatingData : MonoBehaviour
 
         return t_vertices;
     }
-
+    bool bo  = true;
     public void SetUpServer(string ip, int port)
     {
         ReceiveCallBack back = delegate (ushort[] data)
         {
-            TransCoordinate(data);
-            Debug.Log("回调");
+            if (bo)
+            {
+                TransCoordinate(data);
+                Debug.Log("回调");
+                bo = false;
+            }
+
         };
 
         Server.Instance.ServerInit(back, ip, port);
