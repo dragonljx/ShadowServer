@@ -16,6 +16,8 @@ public class TreatingData : MonoBehaviour
     private MeshFilter[] filterAll;
     public Material mater;
 
+
+
     public static TreatingData Instance { get { return _instance; } }
     private void Start()
     {
@@ -59,7 +61,7 @@ public class TreatingData : MonoBehaviour
 
         for (int i = 0; i < resolutionDepth; i++)
         {
-            if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z))
+            if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z)||i%2==0)
             {
                 coordinatesAll[i] = Vector3.zero;
                 continue;
@@ -69,6 +71,7 @@ public class TreatingData : MonoBehaviour
             coordinatesAll[i].y = camSpace[i].Y;
             coordinatesAll[i].z = camSpace[i].Z;
         }
+
         for (int i = 0; i < 4; i++)
         {
             if (i == 4 - 1)
