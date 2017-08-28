@@ -90,9 +90,9 @@ public class TreatingData : MonoBehaviour
             temporaryCoordinate[count].z = camSpace[i].Z;
         }
         //初始化坐标
-        coordinatesAll = new Vector3[count];
+        coordinatesAll = new Vector3[1000];
         //将有效坐标存入
-        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, count);
+        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, 1000);
 
         #region 计算出点云的最大边界
 
@@ -128,14 +128,14 @@ public class TreatingData : MonoBehaviour
         #region 点云初始化
 
         delaunayTriangulation.Setup(rect);
-        for (int i = 0; i < coordinatesAll.Length; i++)
+        for (int i = 0; i < 1000; i++)
         {
             delaunayTriangulation.Add(coordinatesAll[i]);
         }
 
         #endregion 点云初始化
 
-        if (count < verticesNumber)
+        if (10 < verticesNumber)
         {
             CloudReverse(meshAll[0], coordinatesAll, 0, count, 0);
         }
@@ -154,20 +154,20 @@ public class TreatingData : MonoBehaviour
             }
         }
     }
-
+    List<Vector3> t_vertices;
+    List<int> tris;
     /// <summary>
     /// 点云模型生成
     /// </summary>
     public void CloudReverse(Mesh mesh, Vector3[] vertices, int beginIndex, int pointsNum, int meshNum)
     {
         //异步执行以下内容
-        Loom.RunAsync(() =>
-        {
+
            
             List<DelaunayTriangulation.Triangle> triangles = delaunayTriangulation.GetTriangles();//获取三角形
-            List<Vector3> t_vertices = GetVertices();//获取顶点
+             t_vertices = GetVertices();//获取顶点
 
-            List<int> tris = new List<int>();
+            tris = new List<int>();
             for (var ti = 0; ti < triangles.Count; ti++)
             {
                 DelaunayTriangulation.Triangle tri = triangles[ti];
@@ -176,18 +176,23 @@ public class TreatingData : MonoBehaviour
             }
 
             //调用loom在update中执行下列方法，达到主线程执行的功能
-            Loom.QueueOnMainThread(() =>
-            {
-                mesh.Clear();
-                mesh.vertices = t_vertices.ToArray();
-                mesh.triangles = tris.ToArray();
 
-                mesh.RecalculateNormals();
-                filterAll[meshNum].mesh = mesh;
-            });
-        });
+
+
     }
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            filterAll[0].mesh.Clear();
+            filterAll[0].mesh.vertices = t_vertices.ToArray();
+            filterAll[0].mesh.triangles = tris.ToArray();
 
+            filterAll[0].mesh.RecalculateNormals();
+        }
+
+
+    }
     /// <summary>
     /// 获取所有顶点 包括超级三角形 与矩形点
     /// </summary>
