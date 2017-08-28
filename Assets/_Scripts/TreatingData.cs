@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using Windows.Kinect;
 
 public class TreatingData : MonoBehaviour
@@ -9,14 +10,18 @@ public class TreatingData : MonoBehaviour
     private int resolutionDepth;
     private ushort[] depthData;
     private int verticesNumber = 60000;
-    private int verticesRemaining;
+    /// <summary>
+    /// 所有坐标
+    /// </summary>
     private Vector3[] coordinatesAll;
+    /// <summary>
+    /// 暂存坐标
+    /// </summary>
+    private Vector3[] temporaryCoordinate;
     private Mesh[] meshAll;
     private GameObject[] objAll;
     private MeshFilter[] filterAll;
     public Material mater;
-
-
 
     public static TreatingData Instance { get { return _instance; } }
     private void Start()
@@ -28,9 +33,8 @@ public class TreatingData : MonoBehaviour
             _Sensor.Open();
         }
         resolutionDepth = 512 * 424;
-        verticesRemaining = resolutionDepth % verticesNumber;
-
-        coordinatesAll = new Vector3[resolutionDepth];
+        //初始化暂存坐标
+        temporaryCoordinate = new Vector3[resolutionDepth];
         meshAll = new Mesh[4];
         objAll = new GameObject[4];
         filterAll = new MeshFilter[4];
@@ -46,7 +50,7 @@ public class TreatingData : MonoBehaviour
 
     }
 
-    
+
     /// <summary>
     /// 深度图坐标转换
     /// </summary>
@@ -59,54 +63,126 @@ public class TreatingData : MonoBehaviour
         CameraSpacePoint[] camSpace = new CameraSpacePoint[depth.Length];
         _Sensor.CoordinateMapper.MapDepthFrameToCameraSpace(depth, camSpace);
 
+        //for (int i = 0; i < resolutionDepth; i++)
+        //{
+        //    if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z))
+        //    {
+        //        coordinatesAll[i] = Vector3.zero;
+        //        continue;
+        //    }
+
+        //    coordinatesAll[i].x = -camSpace[i].X;
+        //    coordinatesAll[i].y = camSpace[i].Y;
+        //    coordinatesAll[i].z = camSpace[i].Z;
+        //}
+        //计数器 计算有多少有效存入的坐标
+        int count = 0;
+        //修改动态添加mesh
         for (int i = 0; i < resolutionDepth; i++)
         {
-            if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z)||i%2==0)
+
+            if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z) || i % 2 == 0)
             {
-                coordinatesAll[i] = Vector3.zero;
+                //coordinatesAll[i] = Vector3.zero;
                 continue;
             }
 
-            coordinatesAll[i].x = -camSpace[i].X;
-            coordinatesAll[i].y = camSpace[i].Y;
-            coordinatesAll[i].z = camSpace[i].Z;
+            temporaryCoordinate[i].x = -camSpace[i].X;
+            temporaryCoordinate[i].y = camSpace[i].Y;
+            temporaryCoordinate[i].z = camSpace[i].Z;
+            count++;
         }
-
-        for (int i = 0; i < 4; i++)
+        //初始化坐标
+        coordinatesAll = new Vector3[count];
+        //将有效坐标存入
+        //Buffer.BlockCopy(temporaryCoordinate, 0, coordinatesAll, 0, count-1);
+        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0,count);
+        if (count < verticesNumber)
         {
-            if (i == 4 - 1)
-            {
-                CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesRemaining,i);
-                //filterAll[i].mesh = meshAll[i];
-                break;
-            }
-            CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesNumber,i);
-            //filterAll[i].mesh = meshAll[i];
-
+            CloudReverse(meshAll[0], coordinatesAll, 0, count, 0);
         }
+        else
+        {
+            int num = count / verticesNumber;
+            int remaining = count % verticesNumber;
+            for (int i = 0; i < num; i++)
+            {
+                if (i == num - 1)
+                {
+                    CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, remaining, i);
+                    //filterAll[i].mesh = meshAll[i];
+                    break;
+                }
+                CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesNumber, i);
+                //filterAll[i].mesh = meshAll[i];
+
+            }
+        }
+
+
+
+    }
+
+
+    int[] i0;
+    Vector3[] v0;
+    private void Update()
+    {
+        filterAll[0].mesh.Clear();
+        filterAll[0].mesh.vertices = v0;
+        //filterAll[0].mesh.SetIndices(i0, MeshTopology.Triangles, 0);
+        filterAll[0].mesh.triangles = i0;
+        //filterAll[0].mesh = mesh;
     }
     /// <summary>
     /// 点云模型生成
     /// </summary>
-    public void CloudReverse(Mesh mesh, Vector3[] vertices, int beginIndex, int pointsNum,int meshNum)
+    public void CloudReverse(Mesh mesh, Vector3[] vertices, int beginIndex, int pointsNum, int meshNum)
     {
         //异步执行以下内容
-        Loom.RunAsync(() => {
+        //Loom.RunAsync(() => {
         Vector3[] points = new Vector3[pointsNum];
         int[] indecies = new int[pointsNum];
-            for (int i = 0; i < pointsNum; i++)
+
+        int len = vertices.Length;
+        int f = 0, b = len - 1;
+        int[] triangles = new int[vertices.Length * 3];
+
+        for (int i = 0; i < pointsNum; i++)
+        {
+            points[i] = vertices[beginIndex + i];
+            //indecies[i] = i;
+            if (i % 2 == 1)
             {
-                points[i] = vertices[beginIndex + i];
-                indecies[i] = i;
+                triangles[3 * i - 3] = f++;
+                triangles[3 * i - 2] = f;
+                triangles[3 * i - 1] = b;
+
+
             }
-            //调用loom在update中执行下列方法，达到主线程执行的功能
-            Loom.QueueOnMainThread(() => {
-                mesh.Clear();
-                mesh.vertices = points;
-                mesh.SetIndices(indecies, MeshTopology.Points, 0);
-                filterAll[meshNum].mesh = mesh;
-            });
-        });
+            else
+            {
+                triangles[3 * i - 1] = b--;
+                triangles[3 * i - 2] = b;
+                triangles[3 * i - 3] = f;
+
+
+            }
+
+        }
+
+        i0 = triangles;
+        v0 = points;
+
+        //调用loom在update中执行下列方法，达到主线程执行的功能
+        //Loom.QueueOnMainThread(() => {
+        //mesh.Clear();
+        //mesh.vertices = points;
+        //mesh.SetIndices(triangles, MeshTopology.Triangles, 0);
+
+        //filterAll[meshNum].mesh = mesh;
+        //});
+        //});
 
 
     }
