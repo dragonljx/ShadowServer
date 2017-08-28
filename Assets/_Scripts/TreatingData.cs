@@ -1,33 +1,46 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Windows.Kinect;
 
 public class TreatingData : MonoBehaviour
 {
     private static TreatingData _instance;
-    KinectSensor _Sensor;
+    private KinectSensor _Sensor;
 
     private int resolutionDepth;
-    private ushort[] depthData;
     private int verticesNumber = 60000;
+
     /// <summary>
-    /// 所有坐标
+    /// 所有顶点坐标
     /// </summary>
     private Vector3[] coordinatesAll;
+
     /// <summary>
     /// 暂存坐标
     /// </summary>
     private Vector3[] temporaryCoordinate;
+
     private Mesh[] meshAll;
     private GameObject[] objAll;
     private MeshFilter[] filterAll;
     public Material mater;
 
+    /// <summary>
+    /// 三角剖分
+    /// </summary>
+    private DelaunayTriangulation delaunayTriangulation;
+
+    private Rect rect;
+
     public static TreatingData Instance { get { return _instance; } }
+
     private void Start()
     {
         _instance = this;
         _Sensor = KinectSensor.GetDefault();
+        delaunayTriangulation = new DelaunayTriangulation();
+
         if (!_Sensor.IsOpen)
         {
             _Sensor.Open();
@@ -46,10 +59,7 @@ public class TreatingData : MonoBehaviour
             objAll[i].AddComponent<MeshRenderer>().material = mater;
             meshAll[i] = new Mesh();
         }
-
-
     }
-
 
     /// <summary>
     /// 深度图坐标转换
@@ -63,40 +73,67 @@ public class TreatingData : MonoBehaviour
         CameraSpacePoint[] camSpace = new CameraSpacePoint[depth.Length];
         _Sensor.CoordinateMapper.MapDepthFrameToCameraSpace(depth, camSpace);
 
-        //for (int i = 0; i < resolutionDepth; i++)
-        //{
-        //    if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z))
-        //    {
-        //        coordinatesAll[i] = Vector3.zero;
-        //        continue;
-        //    }
-
-        //    coordinatesAll[i].x = -camSpace[i].X;
-        //    coordinatesAll[i].y = camSpace[i].Y;
-        //    coordinatesAll[i].z = camSpace[i].Z;
-        //}
         //计数器 计算有多少有效存入的坐标
         int count = 0;
         //修改动态添加mesh
         for (int i = 0; i < resolutionDepth; i++)
         {
-
             if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z) || i % 2 == 0)
             {
-                //coordinatesAll[i] = Vector3.zero;
+                //temporaryCoordinate[i] = Vector3.zero;
                 continue;
             }
-
-            temporaryCoordinate[i].x = -camSpace[i].X;
-            temporaryCoordinate[i].y = camSpace[i].Y;
-            temporaryCoordinate[i].z = camSpace[i].Z;
             count++;
+            temporaryCoordinate[count].x = -camSpace[i].X;
+            temporaryCoordinate[count].y = camSpace[i].Y;
+            temporaryCoordinate[count].z = camSpace[i].Z;
         }
         //初始化坐标
         coordinatesAll = new Vector3[count];
         //将有效坐标存入
-        //Buffer.BlockCopy(temporaryCoordinate, 0, coordinatesAll, 0, count-1);
-        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0,count);
+        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, 10);
+
+        #region 计算出点云的最大边界
+
+        float minX = 0;
+        float maxX = 0;
+        float minY = 0;
+        float maxY = 0;
+
+        for (int j = 0; j < coordinatesAll.Length; j++)
+        {
+            if (coordinatesAll[j].x < minX)
+            {
+                minX = coordinatesAll[j].x;
+            }
+            if (coordinatesAll[j].x > maxX)
+            {
+                maxX = coordinatesAll[j].x;
+            }
+            if (coordinatesAll[j].y < minY)
+            {
+                minY = coordinatesAll[j].y;
+            }
+            if (coordinatesAll[j].x > maxY)
+            {
+                maxY = coordinatesAll[j].y;
+            }
+        }
+        //Debug.Log("X最大值：" + maxX + "X最小值：" + minX + "Y最大值：" + maxY + "Y最小值：" + maxY);
+        rect = new Rect(minX, minY, Mathf.Abs(minX) + Mathf.Abs(maxX), Mathf.Abs(minY) + Mathf.Abs(maxY));
+
+        #endregion 计算出点云的最大边界
+
+        #region 点云初始化
+
+        delaunayTriangulation.Setup(rect);
+        for (int i = 0; i < coordinatesAll.Length; i++)
+        {
+            delaunayTriangulation.Add(coordinatesAll[i]);
+        }
+
+        #endregion 点云初始化
+
         if (count < verticesNumber)
         {
             CloudReverse(meshAll[0], coordinatesAll, 0, count, 0);
@@ -105,86 +142,63 @@ public class TreatingData : MonoBehaviour
         {
             int num = count / verticesNumber;
             int remaining = count % verticesNumber;
-            for (int i = 0; i < num; i++)
+            for (int i = 0; i <= num; i++)
             {
-                if (i == num - 1)
+                if (i == num)
                 {
                     CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, remaining, i);
-                    //filterAll[i].mesh = meshAll[i];
                     break;
                 }
                 CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesNumber, i);
-                //filterAll[i].mesh = meshAll[i];
-
             }
         }
-
-
-
     }
 
-
-    int[] i0;
-    Vector3[] v0;
-    private void Update()
-    {
-        filterAll[0].mesh.Clear();
-        filterAll[0].mesh.vertices = v0;
-        //filterAll[0].mesh.SetIndices(i0, MeshTopology.Triangles, 0);
-        filterAll[0].mesh.triangles = i0;
-        //filterAll[0].mesh = mesh;
-    }
     /// <summary>
     /// 点云模型生成
     /// </summary>
     public void CloudReverse(Mesh mesh, Vector3[] vertices, int beginIndex, int pointsNum, int meshNum)
     {
         //异步执行以下内容
-        //Loom.RunAsync(() => {
-        Vector3[] points = new Vector3[pointsNum];
-        int[] indecies = new int[pointsNum];
-
-        int len = vertices.Length;
-        int f = 0, b = len - 1;
-        int[] triangles = new int[vertices.Length * 3];
-
-        for (int i = 0; i < pointsNum; i++)
+        Loom.RunAsync(() =>
         {
-            points[i] = vertices[beginIndex + i];
-            //indecies[i] = i;
-            if (i % 2 == 1)
+           
+            List<DelaunayTriangulation.Triangle> triangles = delaunayTriangulation.GetTriangles();//获取三角形
+            List<Vector3> t_vertices = GetVertices();//获取顶点
+
+            List<int> tris = new List<int>();
+            for (var ti = 0; ti < triangles.Count; ti++)
             {
-                triangles[3 * i - 3] = f++;
-                triangles[3 * i - 2] = f;
-                triangles[3 * i - 1] = b;
-
-
-            }
-            else
-            {
-                triangles[3 * i - 1] = b--;
-                triangles[3 * i - 2] = b;
-                triangles[3 * i - 3] = f;
-
-
+                DelaunayTriangulation.Triangle tri = triangles[ti];
+                int[] triIndexs = tri.GetTriIndexs();
+                tris.AddRange(triIndexs);
             }
 
-        }
+            //调用loom在update中执行下列方法，达到主线程执行的功能
+            Loom.QueueOnMainThread(() =>
+            {
+                mesh.Clear();
+                mesh.vertices = t_vertices.ToArray();
+                mesh.triangles = tris.ToArray();
 
-        i0 = triangles;
-        v0 = points;
+                mesh.RecalculateNormals();
+                filterAll[meshNum].mesh = mesh;
+            });
+        });
+    }
 
-        //调用loom在update中执行下列方法，达到主线程执行的功能
-        //Loom.QueueOnMainThread(() => {
-        //mesh.Clear();
-        //mesh.vertices = points;
-        //mesh.SetIndices(triangles, MeshTopology.Triangles, 0);
+    /// <summary>
+    /// 获取所有顶点 包括超级三角形 与矩形点
+    /// </summary>
+    /// <returns></returns>
+    private List<Vector3> GetVertices()
+    {
+        List<Vector3> t_vertices = new List<Vector3>();
+        t_vertices.AddRange(delaunayTriangulation.GetSuperVertices());
+        t_vertices.AddRange(delaunayTriangulation.GetRectVertices());
+        t_vertices.AddRange(coordinatesAll);
 
-        //filterAll[meshNum].mesh = mesh;
-        //});
-        //});
-
-
+        return t_vertices;
     }
 
     public void SetUpServer(string ip, int port)
@@ -197,7 +211,4 @@ public class TreatingData : MonoBehaviour
 
         Server.Instance.ServerInit(back, ip, port);
     }
-
-
-
 }
