@@ -1,0 +1,12 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/ShadowServer.sln
+/ShadowServer.Plugins.csproj
+/ShadowServer.Editor.Plugins.csproj
+/ShadowServer.csproj
+/Temp
+/Library
+/.gitignore
+/.vs/ShadowServer/v15
