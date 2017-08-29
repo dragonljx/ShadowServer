@@ -20,6 +20,7 @@ public class TreatingData : MonoBehaviour
     private MeshFilter[] filterAll;
     public Material mater;
 
+    public float Z = 0;
 
 
     public static TreatingData Instance { get { return _instance; } }
@@ -51,7 +52,7 @@ public class TreatingData : MonoBehaviour
     }
 
     
-    public static string savePath = "点云数据.data";
+    public static string savePath = "点云数据1.data";
     private void Update()
     {
         //用来保存点云数据
@@ -120,17 +121,23 @@ public class TreatingData : MonoBehaviour
     public void TransCoordinate(Vector3[] depth)
     {
 
-        for (int i = 0; i < 4; i++)
+        if (depth.Length < verticesNumber)
         {
-            if (i == 4 - 1)
+            CloudReverse(meshAll[0], coordinatesAll, 0, depth.Length, 0);
+        }
+        else
+        {
+            int num = depth.Length / verticesNumber;
+            int remaining = depth.Length % verticesNumber;
+            for (int i = 0; i <= num; i++)
             {
-                CloudReverse(meshAll[i], depth, i * verticesNumber, verticesRemaining, i);
-                //filterAll[i].mesh = meshAll[i];
-                break;
+                if (i == num)
+                {
+                    CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, remaining, i);
+                    break;
+                }
+                CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesNumber, i);
             }
-            CloudReverse(meshAll[i], depth, i * verticesNumber, verticesNumber, i);
-            //filterAll[i].mesh = meshAll[i];
-
         }
     }
     /// <summary>
@@ -156,6 +163,11 @@ public class TreatingData : MonoBehaviour
                 //temporaryCoordinate[i] = Vector3.zero;
                 continue;
             }
+            if (camSpace[i].Z >Z)
+            {
+                //temporaryCoordinate[i] = Vector3.zero;
+                continue;
+            }
             count++;
             temporaryCoordinate[count].x = -camSpace[i].X;
             temporaryCoordinate[count].y = camSpace[i].Y;
@@ -166,7 +178,7 @@ public class TreatingData : MonoBehaviour
         //将有效坐标存入
         Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, count);
 
-        if (10 < verticesNumber)
+        if (count < verticesNumber)
         {
             CloudReverse(meshAll[0], coordinatesAll, 0, count, 0);
         }
@@ -207,8 +219,7 @@ public class TreatingData : MonoBehaviour
                 filterAll[meshNum].mesh = mesh;
             });
         });
-
-
+        
     }
 
     public void SetUpServer(string ip, int port)
