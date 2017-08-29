@@ -123,7 +123,7 @@ public class TreatingData : MonoBehaviour
 
         if (depth.Length < verticesNumber)
         {
-            CloudReverse(meshAll[0], coordinatesAll, 0, depth.Length, 0);
+            CloudReverseNow(meshAll[0], depth, 0, depth.Length, 0);
         }
         else
         {
@@ -133,10 +133,10 @@ public class TreatingData : MonoBehaviour
             {
                 if (i == num)
                 {
-                    CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, remaining, i);
+                    CloudReverseNow(meshAll[i], depth, i * verticesNumber, remaining, i);
                     break;
                 }
-                CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesNumber, i);
+                CloudReverseNow(meshAll[i], depth, i * verticesNumber, verticesNumber, i);
             }
         }
     }
@@ -202,26 +202,53 @@ public class TreatingData : MonoBehaviour
     /// </summary>
     public void CloudReverse(Mesh mesh, Vector3[] vertices, int beginIndex, int pointsNum,int meshNum)
     {
+
         //异步执行以下内容
-        Loom.RunAsync(() => {
-        Vector3[] points = new Vector3[pointsNum];
-        int[] indecies = new int[pointsNum];
+        Loom.RunAsync(() =>
+        {
+            Vector3[] points = new Vector3[pointsNum];
+            int[] indecies = new int[pointsNum];
             for (int i = 0; i < pointsNum; i++)
             {
                 points[i] = vertices[beginIndex + i];
                 indecies[i] = i;
             }
             //调用loom在update中执行下列方法，达到主线程执行的功能
-            Loom.QueueOnMainThread(() => {
+            Loom.QueueOnMainThread(() =>
+            {
                 mesh.Clear();
                 mesh.vertices = points;
                 mesh.SetIndices(indecies, MeshTopology.Points, 0);
                 filterAll[meshNum].mesh = mesh;
             });
         });
-        
-    }
 
+    }
+    /// <summary>
+    /// 修改读取点云数据使用
+    /// </summary>
+    /// <param name="mesh"></param>
+    /// <param name="vertices"></param>
+    /// <param name="beginIndex"></param>
+    /// <param name="pointsNum"></param>
+    /// <param name="meshNum"></param>
+    public void CloudReverseNow(Mesh mesh, Vector3[] vertices, int beginIndex, int pointsNum, int meshNum)
+    {
+
+        Vector3[] points = new Vector3[pointsNum];
+        int[] indecies = new int[pointsNum];
+        for (int i = 0; i < pointsNum; i++)
+        {
+            points[i] = vertices[beginIndex + i];
+            indecies[i] = i;
+        }
+
+        mesh.Clear();
+        mesh.vertices = points;
+        mesh.SetIndices(indecies, MeshTopology.Points, 0);
+        filterAll[meshNum].mesh = mesh;
+
+    }
     public void SetUpServer(string ip, int port)
     {
         ReceiveCallBack back = delegate (ushort[] data)
