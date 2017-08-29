@@ -38,7 +38,7 @@ public class DelaunayTriangulation
         rectVertices = new List<Vector3>();
     }
 
-    public void Setup(Rect rect)
+    public void Setup(Rect rect,Vector3[] ve)
     {
         Clear();
 
@@ -63,17 +63,17 @@ public class DelaunayTriangulation
 
         Triangle t = new Triangle(this, 0, 1, 2);
         triangles.Add(t);
-
+        int count = ve.Length;
         // Area rect
-        rectVertices.Add((new Vector3(rect.xMin, rect.yMin)));
-        rectVertices.Add((new Vector3(rect.xMax, rect.yMin)));
-        rectVertices.Add((new Vector3(rect.xMax, rect.yMax)));
-        rectVertices.Add((new Vector3(rect.xMin, rect.yMax)));
-
-        Add(rectVertices[0]);
-        Add(rectVertices[1]);
-        Add(rectVertices[2]);
-        Add(rectVertices[3]);
+        rectVertices.Add(ve[0]);
+        rectVertices.Add(ve[count / 2]);
+        rectVertices.Add(ve[count-1]);
+        //rectVertices.Add((new Vector3(rect.xMin, rect.yMax)));
+        
+        Add(ve[0]);
+        Add(ve[count/2]);
+        Add(ve[count-1]);
+        //Add(rectVertices[3]);
     }
 
     void Clear()

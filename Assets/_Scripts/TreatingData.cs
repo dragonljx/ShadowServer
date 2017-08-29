@@ -90,9 +90,9 @@ public class TreatingData : MonoBehaviour
             temporaryCoordinate[count].z = camSpace[i].Z;
         }
         //初始化坐标
-        coordinatesAll = new Vector3[1000];
+        coordinatesAll = new Vector3[20];
         //将有效坐标存入
-        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, 1000);
+        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, 20);
 
         #region 计算出点云的最大边界
 
@@ -127,8 +127,8 @@ public class TreatingData : MonoBehaviour
 
         #region 点云初始化
 
-        delaunayTriangulation.Setup(rect);
-        for (int i = 0; i < 1000; i++)
+        delaunayTriangulation.Setup(rect,coordinatesAll);
+        for (int i = 0; i < 20; i++)
         {
             delaunayTriangulation.Add(coordinatesAll[i]);
         }
