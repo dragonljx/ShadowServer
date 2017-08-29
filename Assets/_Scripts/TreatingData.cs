@@ -154,7 +154,7 @@ public class TreatingData : MonoBehaviour
         _Sensor.CoordinateMapper.MapDepthFrameToCameraSpace(depth, camSpace);
 
         //计数器 计算有多少有效存入的坐标
-        int count = 0;
+        int count = 5;
         //修改动态添加mesh
         for (int i = 0; i < resolutionDepth; i++)
         {
