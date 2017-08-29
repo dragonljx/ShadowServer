@@ -52,7 +52,7 @@ public class TreatingData : MonoBehaviour
     }
 
     
-    public static string savePath = "点云数据1.data";
+    public static string savePath = "点云数据.data";
     private void Update()
     {
         //用来保存点云数据
