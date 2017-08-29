@@ -141,33 +141,43 @@ public class TreatingData : MonoBehaviour
         {
             return;
         }
+
         CameraSpacePoint[] camSpace = new CameraSpacePoint[depth.Length];
         _Sensor.CoordinateMapper.MapDepthFrameToCameraSpace(depth, camSpace);
 
+        //计数器 计算有多少有效存入的坐标
+        int count = 0;
+        //修改动态添加mesh
         for (int i = 0; i < resolutionDepth; i++)
         {
-            if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z)||i%2==0)
+            if (float.IsInfinity(camSpace[i].X) || float.IsInfinity(camSpace[i].Y) || float.IsInfinity(camSpace[i].Z) || i % 2 == 0)
             {
-                coordinatesAll[i] = Vector3.zero;
+                //temporaryCoordinate[i] = Vector3.zero;
                 continue;
             }
-
-            coordinatesAll[i].x = -camSpace[i].X;
-            coordinatesAll[i].y = camSpace[i].Y;
-            coordinatesAll[i].z = camSpace[i].Z;
+            count++;
+            coordinatesAll[count].x = -camSpace[i].X;
+            coordinatesAll[count].y = camSpace[i].Y;
+            coordinatesAll[count].z = camSpace[i].Z;
         }
 
-        for (int i = 0; i < 4; i++)
+        if (10 < verticesNumber)
         {
-            if (i == 4 - 1)
+            CloudReverse(meshAll[0], coordinatesAll, 0, count, 0);
+        }
+        else
+        {
+            int num = count / verticesNumber;
+            int remaining = count % verticesNumber;
+            for (int i = 0; i <= num; i++)
             {
-                CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesRemaining,i);
-                //filterAll[i].mesh = meshAll[i];
-                break;
+                if (i == num)
+                {
+                    CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, remaining, i);
+                    break;
+                }
+                CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesNumber, i);
             }
-            CloudReverse(meshAll[i], coordinatesAll, i * verticesNumber, verticesNumber,i);
-            //filterAll[i].mesh = meshAll[i];
-
         }
     }
     /// <summary>
