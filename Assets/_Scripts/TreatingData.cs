@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
 using Windows.Kinect;
 
 public class TreatingData : MonoBehaviour
@@ -47,6 +50,88 @@ public class TreatingData : MonoBehaviour
     }
 
     
+    public static string savePath = "点云数据.data";
+    private void Update()
+    {
+        //用来保存点云数据
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            FileStream fs = new FileStream(savePath, FileMode.OpenOrCreate);
+            BinaryWriter binWriter = new BinaryWriter(fs);
+            byte[] by = new byte[coordinatesAll.Length * 12];
+            for (int i = 0; i < coordinatesAll.Length; i++)
+            {
+
+                    //vertices[beginIndex + i]
+                    //点的xyz数据
+                    byte[] ve3 = new byte[3 * sizeof(float)];
+                    //存入xyz
+                    Buffer.BlockCopy(BitConverter.GetBytes(coordinatesAll[i].x),
+                        0, ve3, 0 * sizeof(float), sizeof(float));
+
+                    Buffer.BlockCopy(BitConverter.GetBytes(coordinatesAll[i].y),
+                        0, ve3, 1 * sizeof(float), sizeof(float));
+
+                    Buffer.BlockCopy(BitConverter.GetBytes(coordinatesAll[i].z),
+                        0, ve3, 2 * sizeof(float), sizeof(float));
+
+                    //将保存的坐标数据存入
+                    ve3.CopyTo(by, i *12);
+            }
+
+            binWriter.Write(by, 0, by.Length);
+
+            binWriter.Close();
+            fs.Close();
+        }
+
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            byte[] point;
+
+            FileStream fs = new FileStream(savePath, FileMode.Open);
+            BinaryReader binReader = new BinaryReader(fs);
+
+            point = new byte[fs.Length];
+            binReader.Read(point, 0, (int)fs.Length);
+
+            binReader.Close();
+            fs.Close();
+
+            int verticesLength = point.Length / 12;
+
+           Vector3[]vector = new Vector3[verticesLength];
+
+            int index = 0;
+            for (int i = 0; i < verticesLength; i++)
+            {
+                Vector3 v = Vector3.zero;
+                v.x = BitConverter.ToSingle(point, index++ * 4);
+                v.y = BitConverter.ToSingle(point, index++ * 4);
+                v.z = BitConverter.ToSingle(point, index++ * 4);
+
+                vector[i] = v;
+            }
+            TransCoordinate(vector);
+
+        }
+    }
+    public void TransCoordinate(Vector3[] depth)
+    {
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (i == 4 - 1)
+            {
+                CloudReverse(meshAll[i], depth, i * verticesNumber, verticesRemaining, i);
+                //filterAll[i].mesh = meshAll[i];
+                break;
+            }
+            CloudReverse(meshAll[i], depth, i * verticesNumber, verticesNumber, i);
+            //filterAll[i].mesh = meshAll[i];
+
+        }
+    }
     /// <summary>
     /// 深度图坐标转换
     /// </summary>
@@ -121,7 +206,5 @@ public class TreatingData : MonoBehaviour
 
         Server.Instance.ServerInit(back, ip, port);
     }
-
-
 
 }
