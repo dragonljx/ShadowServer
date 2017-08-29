@@ -14,6 +14,7 @@ public class TreatingData : MonoBehaviour
     private int verticesNumber = 60000;
     private int verticesRemaining;
     private Vector3[] coordinatesAll;
+    private Vector3[] temporaryCoordinate;
     private Mesh[] meshAll;
     private GameObject[] objAll;
     private MeshFilter[] filterAll;
@@ -33,7 +34,7 @@ public class TreatingData : MonoBehaviour
         resolutionDepth = 512 * 424;
         verticesRemaining = resolutionDepth % verticesNumber;
 
-        coordinatesAll = new Vector3[resolutionDepth];
+        temporaryCoordinate = new Vector3[resolutionDepth];
         meshAll = new Mesh[4];
         objAll = new GameObject[4];
         filterAll = new MeshFilter[4];
@@ -156,10 +157,11 @@ public class TreatingData : MonoBehaviour
                 continue;
             }
             count++;
-            coordinatesAll[count].x = -camSpace[i].X;
-            coordinatesAll[count].y = camSpace[i].Y;
-            coordinatesAll[count].z = camSpace[i].Z;
+            temporaryCoordinate[count].x = -camSpace[i].X;
+            temporaryCoordinate[count].y = camSpace[i].Y;
+            temporaryCoordinate[count].z = camSpace[i].Z;
         }
+
 
         if (10 < verticesNumber)
         {
