@@ -161,7 +161,10 @@ public class TreatingData : MonoBehaviour
             temporaryCoordinate[count].y = camSpace[i].Y;
             temporaryCoordinate[count].z = camSpace[i].Z;
         }
-
+        //初始化坐标
+        coordinatesAll = new Vector3[count];
+        //将有效坐标存入
+        Array.Copy(temporaryCoordinate, 0, coordinatesAll, 0, count);
 
         if (10 < verticesNumber)
         {
