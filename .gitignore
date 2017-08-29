@@ -10,3 +10,5 @@
 /Library
 /.gitignore
 /.vs/ShadowServer/v15
+*.data
+/点云数据2.data
